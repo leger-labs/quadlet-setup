@@ -1,0 +1,37 @@
+# original: https://github.com/fpatrick/podman-quadlet
+[Unit]
+Description=  # (Optional) A brief description of the service
+Wants=        # (Optional) Services you want to run with this one
+After=        # (Optional) Services that need to start before this one
+
+[Service]
+Restart=on-failure        # (Optional) Set to 'always' or 'on-failure' to restart on failure
+TimeoutStartSec=900 # (Optional) Time to wait before considering a failure
+
+[Install]
+WantedBy=default.target       # (Optional) Target to start with (default: multi-user.target). For graphical user interface systems default.target
+
+[Container]
+Image=          # (Mandatory) The container image to use (e.g., docker.io/library/alpine)
+ContainerName=  # (Mandatory) The container's name
+AutoUpdate=registry
+
+AddCapability=  # (Optional) Extra capabilities to add to the container
+AddDevice=      # (Optional) Add host devices to the container
+SecurityLabelDisable= # (Optional) Disable SELinux labels
+User=           # (Optional) Run as a specific user inside the container
+Label=          # (Optional) Add metadata labels to the container
+UIDMap=         # (Optional) User ID mapping. Example: 0:10000:10 (Inside:Outside:Range)
+GIDMap=         # (Optional) Group ID mapping Example: 0:10000:10 (Inside:Outside:Range)
+
+Network=        # (Optional) Custom network for the container
+HostName=       # (Optional) The containers hostname
+PublishPort=    # (Optional) Ports to expose (host:container)
+
+Volume=         # (Optional) Persistent storage paths (host:container)
+
+EnvironmentFile= # (Optional) Path to an .env file
+Environment=    # (Optional) Key=value pairs for environment variables
+
+PodmanArgs=     # (Optional) Additional Podman arguments
+Exec=           # (Optional) Custom command to run in the container

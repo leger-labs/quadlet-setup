@@ -12,3 +12,10 @@ https://docs.rancherdesktop.io/tutorials/working-with-llms/
 Current understanding:
 - one container per model
 - managed by llama-swap
+
+https://github.com/kyuz0/amd-strix-halo-toolboxes
+https://strixhalo-homelab.d7.wtf/AI/AI-Capabilities-Overview
+https://llm-tracker.info/_TOORG/Strix-Halo
+https://github.com/lhl/strix-halo-testing/tree/main
+https://github.com/kyuz0/amd-strix-halo-toolboxes/blob/main/docs/building.md
+Qwen3-235B in Q3_K_XL and GLM 4.5-Air-106B in Q6_K_XL

@@ -1,0 +1,12 @@
+{
+	admin unix//run/admin.sock
+}
+
+http://localhost {
+	bind fd/3 {
+		protocols h1
+	}
+	log
+	respond "Hello world
+"
+}

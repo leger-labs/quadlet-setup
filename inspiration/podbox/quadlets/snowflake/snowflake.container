@@ -1,0 +1,17 @@
+[Unit]
+Description=Snowflake proxy
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
+
+[Container]
+Image=docker.io/thetorproject/snowflake-proxy
+ContainerName=snowflake
+AutoUpdate=registry
+
+Network=snowflake.container
+HostName=snowflake

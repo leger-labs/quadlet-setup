@@ -1,0 +1,4 @@
+[Container]
+ContainerName=nginx
+Image=docker.io/library/nginx
+Network=mynet.network
