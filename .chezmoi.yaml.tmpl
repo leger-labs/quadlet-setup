@@ -64,6 +64,8 @@ data:
     gemini: "{{ .secrets.api_keys.gemini }}"
     jupyter_token: "{{ .secrets.api_keys.jupyter_token }}"
     qdrant: "{{ .secrets.api_keys.qdrant }}"
+    mistral_ocr: "{{ .secrets.api_keys.mistral_ocr }}"
+    tavily: "{{ .secrets.api_keys.tavily }}"
 
   # Service-specific configuration
   service_config:
@@ -102,3 +104,5 @@ secrets:
     gemini: "changeme"
     jupyter_token: "changeme"
     qdrant: "changeme-qdrant-api-key"
+    mistral_ocr: "changeme-mistral-ocr-key"
+    tavily: "tvly-changeme"
