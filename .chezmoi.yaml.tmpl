@@ -19,6 +19,7 @@ data:
     tika: 9998
     sst: 8000
     letta: 8283
+    jupyter: 8888
 
   # Published ports (host:container mapping for Caddy reverse proxy)
   # Only services that need external access via Caddy
@@ -29,6 +30,7 @@ data:
     docling: 5001        # Host 5001 → Container 5001
     sst: 8000            # Host 8000 → Container 8000
     letta: 8283          # Host 8283 → Container 8283
+    jupyter: 8889        # Host 8889 → Container 8888
     # Note: postgres, redis, tika - NO published ports (internal only)
 
   # External URLs (via Tailscale + Caddy)
@@ -36,11 +38,13 @@ data:
     openwebui: "https://ai.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
     litellm: "https://litellm.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
     searxng: "https://search.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
+    jupyter: "https://jupyter.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
 
   # Tailscale configuration
   tailscale:
     hostname: "llm-server"
     tailnet: "your-tailnet.ts.net"
+    full_hostname: "llm-server.your-tailnet.ts.net"
 
   # Database configuration (passwords should be in encrypted_private_secrets.yaml)
   database:
@@ -55,6 +59,7 @@ data:
     openai: "{{ .secrets.api_keys.openai }}"
     anthropic: "{{ .secrets.api_keys.anthropic }}"
     gemini: "{{ .secrets.api_keys.gemini }}"
+    jupyter_token: "{{ .secrets.api_keys.jupyter_token }}"
 
   # Service-specific configuration
   service_config:
@@ -65,6 +70,19 @@ data:
       default_user_role: "user"
       enable_community_sharing: "false"
       enable_message_rating: "true"
+
+  # Services configuration (for quadlet templates)
+  services:
+    jupyter:
+      subdomain: "jupyter"
+      port: 8889
+      bind: "127.0.0.1"
+      description: "Jupyter Lab - Code Interpreter"
+    cockpit:
+      subdomain: "cockpit"
+      port: 9090
+      bind: "127.0.0.1"
+      description: "System Management Interface"
 
 # Secrets structure (should be in encrypted_private_secrets.yaml)
 # This is just documentation - actual secrets go in the encrypted file
@@ -78,3 +96,4 @@ secrets:
     openai: "sk-changeme"
     anthropic: "sk-ant-changeme"
     gemini: "changeme"
+    jupyter_token: "changeme"
