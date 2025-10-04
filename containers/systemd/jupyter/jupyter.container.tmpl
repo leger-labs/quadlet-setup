@@ -1,0 +1,48 @@
+# Accessed via: https://{{ .services.jupyter.subdomain }}.{{ .tailscale.full_hostname }}
+# Internal URL for OpenWebUI: http://jupyter:{{ .ports.jupyter }}
+
+[Unit]
+Description=Jupyter Lab - Code Interpreter for OpenWebUI
+After=network-online.target llm.network.service
+Requires=llm.network.service
+
+[Container]
+Image=quay.io/jupyter/scipy-notebook:latest
+AutoUpdate=registry
+ContainerName=jupyter
+
+# Network - use shared llm.network
+Network=llm.network
+
+# Published port for external access via Caddy
+PublishPort={{ .services.jupyter.bind }}:{{ .services.jupyter.port }}:{{ .ports.jupyter }}/tcp
+
+# Volume for persistent notebook storage
+Volume=jupyter.volume:/home/jovyan/work:Z
+
+# Environment variables for OpenWebUI integration
+Environment=JUPYTER_ENABLE_LAB=yes
+Environment=JUPYTER_TOKEN={{ .api_keys.jupyter_token }}
+Environment=RESTARTABLE=yes
+
+# Run as root for OpenWebUI code execution compatibility
+PodmanArgs=--user root
+
+# Disable authentication for local-only access (per CLAUDE.md)
+Exec=start-notebook.py --NotebookApp.token='' --NotebookApp.password='' --NotebookApp.disable_check_xsrf=True --NotebookApp.allow_origin='*' --NotebookApp.base_url=/
+
+# Health check
+HealthCmd="curl -f http://localhost:{{ .ports.jupyter }}/api || exit 1"
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+
+[Service]
+Slice=llm.slice
+TimeoutStartSec=180
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=scroll-session.target
