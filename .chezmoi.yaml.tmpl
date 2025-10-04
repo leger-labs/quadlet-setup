@@ -17,6 +17,8 @@ data:
     searxng: 8080
     docling: 5001
     tika: 9998
+    sst: 8000
+    letta: 8283
 
   # Published ports (host:container mapping for Caddy reverse proxy)
   # Only services that need external access via Caddy
@@ -25,7 +27,9 @@ data:
     litellm: 4000        # Host 4000 → Container 4000
     searxng: 8888        # Host 8888 → Container 8080
     docling: 5001        # Host 5001 → Container 5001
-    # Note: postgres, redis - NO published ports (internal only)
+    sst: 8000            # Host 8000 → Container 8000
+    letta: 8283          # Host 8283 → Container 8283
+    # Note: postgres, redis, tika - NO published ports (internal only)
 
   # External URLs (via Tailscale + Caddy)
   urls:
@@ -40,13 +44,9 @@ data:
 
   # Database configuration (passwords should be in encrypted_private_secrets.yaml)
   database:
-    # LiteLLM database
-    litellm_postgres_user: "litellm"
-    litellm_postgres_password: "{{ .secrets.database.litellm_postgres_password }}"
-
-    # Open WebUI database
-    openwebui_postgres_user: "openwebui"
-    openwebui_postgres_password: "{{ .secrets.database.openwebui_postgres_password }}"
+    # Generic postgres credentials used by all services
+    postgres_user: "postgres"
+    postgres_password: "{{ .secrets.database.postgres_password }}"
 
   # API Keys (should be in encrypted_private_secrets.yaml)
   api_keys:
@@ -70,8 +70,7 @@ data:
 # This is just documentation - actual secrets go in the encrypted file
 secrets:
   database:
-    litellm_postgres_password: "changeme"
-    openwebui_postgres_password: "changeme"
+    postgres_password: "changeme"
 
   api_keys:
     litellm_master: "sk-llm-master-key-changeme"

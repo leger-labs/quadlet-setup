@@ -1,0 +1,36 @@
+[Unit]
+Description=PostgreSQL database for Letta memory management
+After=network-online.target llm.network.service
+Requires=llm.network.service
+
+[Container]
+Image=docker.io/postgres:16
+AutoUpdate=registry
+ContainerName=letta-postgres
+
+# Network - NO published port, only internal access
+Network=llm
+
+# Environment
+Environment=POSTGRES_USER={{ .database.postgres_user }}
+Environment=POSTGRES_PASSWORD={{ .database.postgres_password }}
+Environment=POSTGRES_DB=letta
+
+# Volume
+Volume=letta-postgres.volume:/var/lib/postgresql/data:Z
+
+# Health check
+HealthCmd="pg_isready -U {{ .database.postgres_user }}"
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+
+[Service]
+Slice=llm.slice
+TimeoutStartSec=900
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=scroll-session.target
