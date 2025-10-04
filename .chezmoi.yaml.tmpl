@@ -1,0 +1,80 @@
+# Chezmoi Configuration Template
+# This file defines all template variables used throughout the container configurations
+
+data:
+  # Network configuration
+  network:
+    name: "llm"
+    subnet: "10.89.0.0/24"
+    gateway: "10.89.0.1"
+
+  # Internal container ports (what services listen on INSIDE containers)
+  ports:
+    postgres: 5432
+    redis: 6379
+    litellm: 4000
+    openwebui: 8080
+    searxng: 8080
+    docling: 5001
+    tika: 9998
+    sst: 8000
+    letta: 8283
+
+  # Published ports (host:container mapping for Caddy reverse proxy)
+  # Only services that need external access via Caddy
+  published_ports:
+    openwebui: 3000      # Host 3000 → Container 8080
+    litellm: 4000        # Host 4000 → Container 4000
+    searxng: 8888        # Host 8888 → Container 8080
+    docling: 5001        # Host 5001 → Container 5001
+    sst: 8000            # Host 8000 → Container 8000
+    letta: 8283          # Host 8283 → Container 8283
+    # Note: postgres, redis, tika - NO published ports (internal only)
+
+  # External URLs (via Tailscale + Caddy)
+  urls:
+    openwebui: "https://ai.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
+    litellm: "https://litellm.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
+    searxng: "https://search.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
+
+  # Tailscale configuration
+  tailscale:
+    hostname: "llm-server"
+    tailnet: "your-tailnet.ts.net"
+
+  # Database configuration (passwords should be in encrypted_private_secrets.yaml)
+  database:
+    # Generic postgres credentials used by all services
+    postgres_user: "postgres"
+    postgres_password: "{{ .secrets.database.postgres_password }}"
+
+  # API Keys (should be in encrypted_private_secrets.yaml)
+  api_keys:
+    litellm_master: "{{ .secrets.api_keys.litellm_master }}"
+    openwebui_secret: "{{ .secrets.api_keys.openwebui_secret }}"
+    openai: "{{ .secrets.api_keys.openai }}"
+    anthropic: "{{ .secrets.api_keys.anthropic }}"
+    gemini: "{{ .secrets.api_keys.gemini }}"
+
+  # Service-specific configuration
+  service_config:
+    openwebui:
+      name: "AI Assistant"
+      auth: "false"  # NO LOGIN PREFERRED per CLAUDE.md
+      enable_signup: "false"
+      default_user_role: "user"
+      enable_community_sharing: "false"
+      enable_message_rating: "true"
+
+# Secrets structure (should be in encrypted_private_secrets.yaml)
+# This is just documentation - actual secrets go in the encrypted file
+secrets:
+  database:
+    postgres_password: "changeme"
+
+  api_keys:
+    litellm_master: "sk-llm-master-key-changeme"
+    openwebui_secret: "changeme"
+    openai: "sk-changeme"
+    anthropic: "sk-ant-changeme"
+    gemini: "changeme"

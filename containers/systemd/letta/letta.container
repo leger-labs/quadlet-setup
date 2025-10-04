@@ -1,0 +1,39 @@
+[Unit]
+Description=Letta - Memory Management Service
+After=network-online.target llm.network.service
+After=letta-postgres.service
+Requires=llm.network.service
+Wants=letta-postgres.service
+
+[Container]
+Image=docker.io/letta/letta:latest
+AutoUpdate=registry
+ContainerName=letta
+
+# Network
+Network=llm
+
+# Published port for Caddy access
+PublishPort=127.0.0.1:8283:8283
+
+# Volume for data persistence
+Volume=letta.volume:/root/.letta:Z
+
+# Environment file for configuration
+EnvironmentFile=%h/.config/containers/systemd/letta/letta.env
+
+# Health check
+HealthCmd="curl -f http://localhost:8283/health || exit 1"
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=20s
+
+[Service]
+Slice=llm.slice
+TimeoutStartSec=900
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=scroll-session.target
