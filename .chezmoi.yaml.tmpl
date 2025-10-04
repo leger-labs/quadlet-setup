@@ -20,6 +20,8 @@ data:
     sst: 8000
     letta: 8283
     jupyter: 8888
+    qdrant: 6333       # Vector database for RAG
+    qdrant_grpc: 6334  # gRPC port (internal only)
 
   # Published ports (host:container mapping for Caddy reverse proxy)
   # Only services that need external access via Caddy
@@ -31,6 +33,7 @@ data:
     sst: 8000            # Host 8000 → Container 8000
     letta: 8283          # Host 8283 → Container 8283
     jupyter: 8889        # Host 8889 → Container 8888
+    qdrant: 6333         # Host 6333 → Container 6333 (optional dashboard)
     # Note: postgres, redis, tika - NO published ports (internal only)
 
   # External URLs (via Tailscale + Caddy)
@@ -60,6 +63,7 @@ data:
     anthropic: "{{ .secrets.api_keys.anthropic }}"
     gemini: "{{ .secrets.api_keys.gemini }}"
     jupyter_token: "{{ .secrets.api_keys.jupyter_token }}"
+    qdrant: "{{ .secrets.api_keys.qdrant }}"
 
   # Service-specific configuration
   service_config:
@@ -97,3 +101,4 @@ secrets:
     anthropic: "sk-ant-changeme"
     gemini: "changeme"
     jupyter_token: "changeme"
+    qdrant: "changeme-qdrant-api-key"

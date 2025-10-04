@@ -3,9 +3,9 @@
 [Unit]
 Description=Open WebUI - AI Chat Interface
 After=network-online.target llm.network.service
-After=litellm.service openwebui-postgres.service openwebui-redis.service searxng.service docling.service jupyter.service
+After=litellm.service openwebui-postgres.service openwebui-redis.service searxng.service docling.service jupyter.service qdrant.service
 Requires=llm.network.service
-Wants=litellm.service openwebui-postgres.service openwebui-redis.service searxng.service docling.service jupyter.service
+Wants=litellm.service openwebui-postgres.service openwebui-redis.service searxng.service docling.service jupyter.service qdrant.service
 
 [Container]
 Image=ghcr.io/open-webui/open-webui:main
