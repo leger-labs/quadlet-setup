@@ -1,0 +1,38 @@
+# Accessed via: https://{{ .services.cockpit.subdomain }}.{{ .tailscale.full_hostname }}
+
+[Unit]
+Description={{ .services.cockpit.description }} (Containerized)
+After=network-online.target podman.socket
+Wants=network-online.target
+
+[Container]
+ContainerName=cockpit-ws
+Image=quay.io/cockpit/ws:latest
+AutoUpdate=registry
+
+# Mount the entire host filesystem for system access
+Volume=/:/host:rslave
+Volume=/run/systemd:/run/systemd:rslave
+Volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket:rslave
+
+# Share host PID namespace for process management
+PodmanArgs=--pid host --privileged
+
+# Bind to localhost:{{ .services.cockpit.port }} - Caddy handles external access
+PublishPort={{ .services.cockpit.bind }}:{{ .services.cockpit.port }}:9090/tcp
+
+# Environment
+Environment=NAME=cockpit-ws
+# Allow unencrypted since Caddy terminates TLS
+Environment=COCKPIT_ALLOW_UNENCRYPTED=true
+
+# Execute the container's label-run script
+Exec=/container/label-run
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target
