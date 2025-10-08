@@ -206,3 +206,9 @@ Environment=REDIS_URL=redis://service-redis:6379
 - [ ] No hardware constraints
 - [ ] Auxiliary services are service-specific (not shared)
 - [ ] Container names are unique and descriptive
+
+---
+
+# NEW: Latest note
+CLEANUP PROCESS (post-completion)
+All services use `PartOf=scroll-session.target` to ensure they stop when the session ends
