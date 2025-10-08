@@ -1,0 +1,104 @@
+model_list:
+
+  ######################################
+  # Chat Models
+  # https://docs.litellm.ai/docs/providers/
+
+  # These chat models are primarily here for Hayhooks
+  #
+  # Open WebUI can use Ollama directly for task models, so it doesn't need this
+  # Letta does not like going through a proxy.
+  #
+  # LiteLLM can also be used by Cline/Continue.dev/etc to list models.
+
+  # This is the primary model used by Hayhooks for search and extract
+
+  - model_name: "gemini/gemini-2.5-pro"
+    litellm_params:
+      model: "gemini/gemini-2.5-pro-preview-06-05"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+  - model_name: "gemini/gemini-2.5-flash"
+    litellm_params:
+      model: "gemini/gemini-2.5-flash-preview-05-20"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+            
+  - model_name: "gemini/gemini-2.0-flash"
+    litellm_params:
+      model: "gemini/gemini-2.0-flash"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+  - model_name: "gemini/gemini-1.5-flash"
+    litellm_params:
+      model: "gemini/gemini-1.5-flash"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+  - model_name: "gemini/gemini-1.5-flash-8b"
+    litellm_params:
+      model: "gemini/gemini-1.5-flash-8b"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+  # Expose Ollama models to Hayhooks
+  - model_name: "ollama_chat/*"
+    litellm_params:
+      model: "ollama_chat/*"
+      api_base: "os.environ/OLLAMA_BASE_URL"
+      tags: ["ollama"]
+
+  # Expose Openrouter models to Hayhooks
+  - model_name: "openrouter/*"
+    litellm_params:
+      model: "openrouter/*"
+      api_key: "os.environ/OPENROUTER_API_KEY"
+
+  - model_name: claude-sonnet-4
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+      tags: ["anthropic"]    
+
+  - model_name: claude-3.5-haiku
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-latest
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+      tags: ["anthropic"]      
+
+  # Expose claude-3-7-sonnet with token-efficient-tools to Hayhooks
+  # (Useful if we have to call tools from inside hayhooks)
+  - model_name: claude-3-7-sonnet
+    litellm_params:
+      model: anthropic/claude-3-7-sonnet-20250219
+      api_key: "os.environ/ANTHROPIC_API_KEY"
+      tags: ["anthropic"]
+      extra_headers: {"anthropic-beta": "token-efficient-tools-2025-02-19"}
+
+  ######################################
+  # Embedding Models
+
+  # Specify an ollama embedding model (much easier)
+  - model_name: "ollama/nomic-embed-text"
+    litellm_params:
+      model: "ollama/nomic-embed-text"
+      api_base: "os.environ/OLLAMA_BASE_URL"
+      tags: ["ollama"]
+
+  - model_name: "gemini/text-embedding-004"
+    litellm_params:
+      model: "gemini/text-embedding-004"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+  - model_name: "gemini/text-embedding-005"
+    litellm_params:
+      model: "gemini/text-embedding-005"
+      api_key: "os.environ/GEMINI_API_KEY"
+      tags: ["gemini"]
+
+litellm_settings:
+  request_timeout: 600    # raise Timeout error if call takes longer than 600 seconds.
+  drop_params: true  # Useful when we have ollama models that don't take full params
