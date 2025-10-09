@@ -1,3 +1,5 @@
+
+
 IBM Granite-Docling: End-to-end document understanding with one tiny model
 Docling art
 A different way to digest documents
