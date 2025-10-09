@@ -27,35 +27,6 @@ Containers:
 ## Full Implementation (Corrected)
 
 ### 1. Install RamaLama on Host
-
-**File:** `run_once_before/00-install-ramalama.sh.tmpl`
-
-```bash
-#!/bin/bash
-# Install RamaLama on Fedora host
-
-set -e
-
-if command -v ramalama &> /dev/null; then
-    echo "RamaLama already installed:"
-    ramalama version
-    exit 0
-fi
-
-echo "Installing RamaLama via DNF..."
-sudo dnf install -y python3-ramalama
-
-echo "RamaLama installed successfully:"
-ramalama version
-
-echo "Pre-pulling models (optional, can be done later)..."
-# Uncomment to pre-download models:
-# ramalama pull ollama://qwen3-32b
-# ramalama pull ollama://smollm-135m
-```
-
----
-
 ### 2. RamaLama Host Configuration
 
 **File:** `dot_config/ramalama/ramalama.conf.tmpl`
