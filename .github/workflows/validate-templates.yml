@@ -1,0 +1,280 @@
+name: Validate Nunjucks Templates
+
+on:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'njk/**/*.njk'
+      - 'njk/blueprint-config.json'
+      - '.github/workflows/validate-templates.yml'
+  pull_request:
+    paths:
+      - 'njk/**/*.njk'
+      - 'njk/blueprint-config.json'
+      - '.github/workflows/validate-templates.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-templates:
+    name: Render and Validate Templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '.github/workflows/package.json'
+
+      - name: Create package.json for nunjucks-cli
+        run: |
+          mkdir -p /tmp/njk-validator
+          cat > /tmp/njk-validator/package.json << 'EOF'
+          {
+            "name": "njk-validator",
+            "version": "1.0.0",
+            "dependencies": {
+              "nunjucks": "^3.2.4"
+            }
+          }
+          EOF
+
+      - name: Install nunjucks
+        run: |
+          cd /tmp/njk-validator
+          npm install
+
+      - name: Create validation script
+        run: |
+          cat > /tmp/validate.js << 'EOF'
+          const nunjucks = require('nunjucks');
+          const fs = require('fs');
+          const path = require('path');
+
+          // Configure Nunjucks
+          const env = nunjucks.configure('./njk', {
+            autoescape: false,
+            trimBlocks: true,
+            lstripBlocks: true
+          });
+
+          // Load config
+          const config = JSON.parse(fs.readFileSync('./njk/blueprint-config.json', 'utf8'));
+
+          // Files to render and validate
+          const templates = [
+            // Network
+            { file: 'llm.network.njk', type: 'network' },
+
+            // Container files
+            { file: 'caddy.container.njk', type: 'container' },
+            { file: 'litellm.container.njk', type: 'container' },
+            { file: 'litellm-postgres.container.njk', type: 'container' },
+            { file: 'litellm-redis.container.njk', type: 'container' },
+            { file: 'openwebui.container-with-macros.njk', type: 'container' },
+            { file: 'openwebui-postgres.container.njk', type: 'container' },
+            { file: 'openwebui-redis.container.njk', type: 'container' },
+            { file: 'whisper.container.njk', type: 'container' },
+            { file: 'edgetts.container.njk', type: 'container' },
+            { file: 'jupyter.container.njk', type: 'container' },
+            { file: 'llama-swap.container.njk', type: 'container' },
+            { file: 'searxng.container.njk', type: 'container' },
+            { file: 'searxng-redis.container.njk', type: 'container' },
+            { file: 'tika.container.njk', type: 'container' },
+            { file: 'qdrant.container.njk', type: 'container' },
+            { file: 'cockpit.container.njk', type: 'container' },
+
+            // Config files
+            { file: 'Caddyfile.njk', type: 'config' },
+            { file: 'litellm.yaml.njk', type: 'config' },
+            { file: 'openwebui.env.njk', type: 'config' },
+            { file: 'cockpit.conf.njk', type: 'config' },
+            { file: 'llama-swap-config.yaml.njk', type: 'config' },
+            { file: 'searxng-settings.yml.njk', type: 'config' },
+
+            // Caddy routes
+            { file: 'litellm.caddy.njk', type: 'caddy' },
+            { file: 'openwebui.caddy.njk', type: 'caddy' },
+            { file: 'whisper.caddy.njk', type: 'caddy' },
+            { file: 'edgetts.caddy.njk', type: 'caddy' },
+            { file: 'jupyter.caddy.njk', type: 'caddy' },
+            { file: 'llama-swap.caddy.njk', type: 'caddy' },
+            { file: 'searxng.caddy.njk', type: 'caddy' },
+            { file: 'qdrant.caddy.njk', type: 'caddy' },
+            { file: 'cockpit.caddy.njk', type: 'caddy' }
+          ];
+
+          let hasErrors = false;
+          let successCount = 0;
+          let errorCount = 0;
+
+          console.log('\n========================================');
+          console.log('🧪 Validating Nunjucks Templates');
+          console.log('========================================\n');
+
+          templates.forEach(({ file, type }) => {
+            const templatePath = `./njk/${file}`;
+
+            if (!fs.existsSync(templatePath)) {
+              console.log(`⚠️  SKIP: ${file} (file not found)`);
+              return;
+            }
+
+            try {
+              // Render template
+              const rendered = env.render(file, config);
+
+              // Validate based on type
+              let isValid = false;
+              let validationError = null;
+
+              switch (type) {
+                case 'network':
+                  isValid = rendered.includes('[Network]');
+                  validationError = isValid ? null : 'Missing [Network] section';
+                  break;
+
+                case 'container':
+                  isValid = rendered.includes('[Unit]') &&
+                           rendered.includes('[Container]') &&
+                           rendered.includes('[Install]');
+                  if (!isValid) {
+                    const missing = [];
+                    if (!rendered.includes('[Unit]')) missing.push('[Unit]');
+                    if (!rendered.includes('[Container]')) missing.push('[Container]');
+                    if (!rendered.includes('[Install]')) missing.push('[Install]');
+                    validationError = `Missing sections: ${missing.join(', ')}`;
+                  }
+                  break;
+
+                case 'config':
+                case 'caddy':
+                  // For config files, just check it rendered without errors
+                  isValid = rendered.length > 0;
+                  validationError = isValid ? null : 'Empty output';
+                  break;
+              }
+
+              if (isValid) {
+                console.log(`✅ PASS: ${file}`);
+                successCount++;
+              } else {
+                console.log(`❌ FAIL: ${file} - ${validationError}`);
+                errorCount++;
+                hasErrors = true;
+              }
+
+            } catch (error) {
+              console.log(`❌ ERROR: ${file}`);
+              console.log(`   ${error.message}`);
+              errorCount++;
+              hasErrors = true;
+            }
+          });
+
+          console.log('\n========================================');
+          console.log('📊 Validation Summary');
+          console.log('========================================');
+          console.log(`✅ Passed: ${successCount}`);
+          console.log(`❌ Failed: ${errorCount}`);
+          console.log('========================================\n');
+
+          if (hasErrors) {
+            console.error('❌ Template validation failed!');
+            process.exit(1);
+          } else {
+            console.log('✅ All templates validated successfully!');
+            process.exit(0);
+          }
+          EOF
+
+      - name: Run validation
+        run: |
+          cd /tmp/njk-validator
+          export NODE_PATH=/tmp/njk-validator/node_modules
+          cd $GITHUB_WORKSPACE
+          node /tmp/validate.js
+
+      - name: Upload rendered templates (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-templates
+          path: /tmp/rendered-output/
+          retention-days: 7
+
+  validate-volume-files:
+    name: Validate Volume Files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate volume definitions
+        run: |
+          echo "========================================="
+          echo "🔍 Validating Volume Files"
+          echo "========================================="
+          echo ""
+
+          VOLUMES=(
+            "litellm-postgres.volume"
+            "litellm-redis.volume"
+            "openwebui-postgres.volume"
+            "openwebui-redis.volume"
+            "openwebui.volume"
+            "searxng-redis.volume"
+            "searxng.volume"
+            "whisper-cache.volume"
+            "edgetts-cache.volume"
+            "jupyter.volume"
+            "llama-swap.volume"
+            "qdrant.volume"
+            "caddy-config.volume"
+            "caddy-data.volume"
+          )
+
+          ERRORS=0
+          SUCCESS=0
+
+          for volume in "${VOLUMES[@]}"; do
+            if [ ! -f "njk/$volume" ]; then
+              echo "❌ MISSING: $volume"
+              ERRORS=$((ERRORS + 1))
+            elif ! grep -q "^\[Volume\]" "njk/$volume"; then
+              echo "❌ INVALID: $volume (missing [Volume] section)"
+              ERRORS=$((ERRORS + 1))
+            elif ! grep -q "^VolumeName=" "njk/$volume"; then
+              echo "❌ INVALID: $volume (missing VolumeName directive)"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ VALID: $volume"
+              SUCCESS=$((SUCCESS + 1))
+            fi
+          done
+
+          echo ""
+          echo "========================================="
+          echo "📊 Volume Validation Summary"
+          echo "========================================="
+          echo "✅ Valid: $SUCCESS"
+          echo "❌ Invalid: $ERRORS"
+          echo "========================================="
+          echo ""
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Volume validation failed!"
+            exit 1
+          else
+            echo "✅ All volume files validated successfully!"
+            exit 0
+          fi
