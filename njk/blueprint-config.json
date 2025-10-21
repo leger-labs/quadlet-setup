@@ -249,6 +249,21 @@
         "log_level": "INFO",
         "environment": "production",
         "secure_cookies": true
+      },
+      "comfyui": {
+        "hostname": "comfyui",
+        "container_name": "comfyui",
+        "port": 8188,
+        "published_port": 8188,
+        "bind": "127.0.0.1",
+        "image": "ghcr.io/ai-dock/comfyui:latest",
+        "external_subdomain": "comfy",
+        "enabled_by": ["openwebui.features.image_generation"],
+        "websocket": true,
+        "description": "ComfyUI - Stable Diffusion Workflow Engine",
+        "volume": "comfyui.volume",
+        "models_volume": "comfyui-models.volume",
+        "workspace": "/workspace"
       }
     }
   },
@@ -525,5 +540,22 @@
   },
   "caddy": {
     "auto_https": "off"
+  },
+  "comfyui": {
+    "workspace": "/workspace",
+    "auto_update": false,
+    "web_enable_auth": false,
+    "default_model": "flux1-schnell.safetensors",
+    "default_vae": "ae.safetensors",
+    "default_clip_1": "t5xxl_fp16.safetensors",
+    "default_clip_2": "clip_l.safetensors",
+    "hf_token": "${HUGGINGFACE_TOKEN}",
+    "civitai_token": "${CIVITAI_TOKEN}",
+    "args": "",
+    "log_level": "info",
+    "integration": {
+      "openwebui_base_url": "http://comfyui:8188",
+      "enabled": true
+    }
   }
 }
