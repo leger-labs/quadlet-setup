@@ -118,7 +118,7 @@ The service is configured via `blueprint-config.json` under `infrastructure.serv
   "mcp_context_forge": {
     "enabled": true,
     "port": 4444,
-    "database": "sqlite",
+    "database": "postgresql",
     "catalog_enabled": true,
     "ui_enabled": true,
     "admin_api_enabled": true,
@@ -127,7 +127,8 @@ The service is configured via `blueprint-config.json` under `infrastructure.serv
     "federation_enabled": true,
     "a2a_enabled": true,
     "llmchat_enabled": false,
-    "observability_enabled": false
+    "observability_enabled": false,
+    "requires": ["mcp_context_forge_postgres"]
   }
 }
 ```
@@ -146,8 +147,8 @@ PORT=4444
 ENVIRONMENT=production
 LOG_LEVEL=INFO
 
-# Database
-DATABASE_URL=sqlite:////data/mcp.db
+# Database (PostgreSQL - default)
+DATABASE_URL=postgresql://mcp@mcp-context-forge-postgres:5432/mcp
 
 # Authentication
 BASIC_AUTH_USER=admin
@@ -269,13 +270,50 @@ curl -X POST http://localhost:4444/servers \
 
 ## Database Options
 
-### SQLite (Default)
+### PostgreSQL (Default - Recommended)
 
-**Best for:** Development, testing, single-user deployments
+**Best for:** Production, multi-user deployments, high concurrency
+
+MCP Context Forge is configured with a dedicated PostgreSQL database by default.
 
 ```json
 {
-  "database": "sqlite"
+  "database": "postgresql",
+  "requires": ["mcp_context_forge_postgres"]
+}
+```
+
+**Configuration:**
+
+The PostgreSQL service is automatically configured:
+- **Service:** `mcp-context-forge-postgres`
+- **Image:** `docker.io/postgres:17`
+- **Database:** `mcp`
+- **User:** `mcp`
+- **Authentication:** Trust (internal network only, no password required)
+- **Volume:** `mcp-context-forge-postgres.volume`
+
+The template automatically sets: `DATABASE_URL=postgresql://mcp@mcp-context-forge-postgres:5432/mcp`
+
+**Pros:**
+- Production-ready, high performance
+- Supports high concurrency
+- ACID compliance
+- Excellent scalability
+- Automatic backups via volume snapshots
+
+**No additional setup required!** The PostgreSQL container is automatically created and managed.
+
+### SQLite (Alternative)
+
+**Best for:** Development, testing, single-user deployments
+
+To switch to SQLite, update `blueprint-config.json`:
+
+```json
+{
+  "database": "sqlite",
+  "requires": []
 }
 ```
 
@@ -289,40 +327,7 @@ Database file: `~/.local/share/mcp-context-forge/mcp.db`
 **Cons:**
 - Not suitable for high concurrency
 - Limited scalability
-
-### PostgreSQL (Recommended for Production)
-
-**Best for:** Production, multi-user deployments, high concurrency
-
-```json
-{
-  "database": "postgresql",
-  "requires": ["postgres"]
-}
-```
-
-Update `secrets.env`:
-
-```bash
-DB_PASSWORD=your-secure-postgres-password
-```
-
-The template will set: `DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/mcp`
-
-**Setup PostgreSQL Service:**
-
-Ensure you have a PostgreSQL service running. Example quadlet:
-
-```ini
-[Container]
-Image=docker.io/postgres:17
-ContainerName=postgres
-Network=llm.network
-Environment=POSTGRES_DB=mcp
-Environment=POSTGRES_USER=postgres
-Environment=POSTGRES_PASSWORD=${DB_PASSWORD}
-Volume=postgres.volume:/var/lib/postgresql/data:Z
-```
+- Not recommended for production
 
 ### MariaDB / MySQL
 
@@ -528,15 +533,15 @@ systemctl --user restart mcp-context-forge.service
 ### Production Checklist
 
 - [ ] **Change all default passwords** in `secrets.env`
-- [ ] **Use PostgreSQL or MariaDB** (not SQLite) for production
+- [x] **PostgreSQL database** (configured by default)
 - [ ] **Enable HTTPS** via Caddy/Tailscale
 - [ ] **Set `SECURE_COOKIES=true`** (requires HTTPS)
 - [ ] **Configure SSO** for user authentication
 - [ ] **Use asymmetric JWT** (RS256/ES256, not HS256)
-- [ ] **Set `ENVIRONMENT=production`**
+- [ ] **Set `ENVIRONMENT=production`** (configured by default)
 - [ ] **Disable admin API** (`ADMIN_API_ENABLED=false`) if not needed
 - [ ] **Enable observability** for monitoring
-- [ ] **Regular backups** of `~/.local/share/mcp-context-forge/`
+- [ ] **Regular backups** of PostgreSQL database volume
 - [ ] **Review and limit** CORS allowed origins
 - [ ] **Enable rate limiting** in Caddy (see caddy.njk)
 - [ ] **Rotate JWT secret keys** periodically
@@ -626,11 +631,14 @@ cat ~/.config/mcp-context-forge/secrets.env
 
 **Check database:**
 ```bash
-# SQLite
-ls -lh ~/.local/share/mcp-context-forge/mcp.db
+# Check PostgreSQL is running (default)
+systemctl --user status mcp-context-forge-postgres.service
 
-# If using PostgreSQL/MariaDB, check they're running
-systemctl --user status postgres.service
+# Check PostgreSQL logs
+journalctl --user -u mcp-context-forge-postgres.service -n 50
+
+# Connect to database
+podman exec -it mcp-context-forge-postgres psql -U mcp -d mcp
 ```
 
 #### Cannot Login
@@ -653,8 +661,15 @@ systemctl --user restart mcp-context-forge.service
 
 **Reset database (⚠️ DELETES ALL DATA):**
 ```bash
+# Stop both services
 systemctl --user stop mcp-context-forge.service
-rm -f ~/.local/share/mcp-context-forge/mcp.db
+systemctl --user stop mcp-context-forge-postgres.service
+
+# Remove PostgreSQL volume
+podman volume rm mcp-context-forge-postgres.volume
+
+# Restart services (will recreate database)
+systemctl --user start mcp-context-forge-postgres.service
 systemctl --user start mcp-context-forge.service
 ```
 

@@ -73,7 +73,7 @@ Environment=LOG_FORMAT=json
 {% if service.database == 'sqlite' %}
 Environment=DATABASE_URL=sqlite:////data/mcp.db
 {% elif service.database == 'postgresql' %}
-Environment=DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/mcp
+Environment=DATABASE_URL=postgresql://{{ infrastructure.services.mcp_context_forge_postgres.db_user }}@{{ infrastructure.services.mcp_context_forge_postgres.hostname }}:{{ infrastructure.services.mcp_context_forge_postgres.port }}/{{ infrastructure.services.mcp_context_forge_postgres.db_name }}
 {% elif service.database == 'mariadb' %}
 Environment=DATABASE_URL=mysql+pymysql://mysql:${DB_PASSWORD}@mariadb:3306/mcp
 {% elif service.database == 'mysql' %}
