@@ -1,0 +1,40 @@
+{% import "macros.njk" as m -%}
+# ═════════════════════════════════════════════════════════════════════════════
+# 📄 APACHE TIKA - Content Extraction Service
+# Generated from blueprint-config.json
+# Conditionally enabled when: openwebui.providers.content_extraction == "tika"
+# ═════════════════════════════════════════════════════════════════════════════
+
+[Unit]
+Description={{ infrastructure.services.tika.description }}
+After=network-online.target {{ infrastructure.network.name }}.network.service
+Requires={{ infrastructure.network.name }}.network.service
+
+[Container]
+Image={{ infrastructure.services.tika.image }}
+AutoUpdate=registry
+ContainerName={{ infrastructure.services.tika.container_name }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🌐 NETWORK - Internal only, no published ports
+# ═════════════════════════════════════════════════════════════════════════════
+Network={{ infrastructure.network.name }}.network
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🔐 ENVIRONMENT - Java heap settings for document processing
+# ═════════════════════════════════════════════════════════════════════════════
+Environment=TIKA_CHILD_JAVA_OPTS=-JXmx{{ infrastructure.services.tika.heap_size | default("2g") }}
+Environment=TIKA_CHILD_MAX_HEAP={{ infrastructure.services.tika.heap_size | default("2g") }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🔧 HEALTH CHECK
+# ═════════════════════════════════════════════════════════════════════════════
+{{ m.healthCheckWget(infrastructure.services.tika.port, "/tika") }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🚀 SERVICE
+# ═════════════════════════════════════════════════════════════════════════════
+{{ m.serviceSection(timeout=600) }}
+
+[Install]
+# No WantedBy - dependencies via After/Requires

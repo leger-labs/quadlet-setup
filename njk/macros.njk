@@ -72,6 +72,45 @@ PodmanArgs=--security-opt=label=disable
 {% endmacro %}
 
 {# ═════════════════════════════════════════════════════════════════════════ #}
+{# DATABASE MACROS                                                            #}
+{# ═════════════════════════════════════════════════════════════════════════ #}
+
+{# PostgreSQL health check #}
+{% macro postgresHealthCheck(db_user, start_period="10s") %}
+HealthCmd=pg_isready -U {{ db_user }}
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=5
+HealthStartPeriod={{ start_period }}
+{% endmacro %}
+
+{# Redis health check #}
+{% macro redisHealthCheck(start_period="10s") %}
+HealthCmd=redis-cli ping || exit 1
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod={{ start_period }}
+{% endmacro %}
+
+{# PostgreSQL environment variables (trustauth for internal-only databases) #}
+{% macro postgresEnv(db_name, db_user, enable_vector=true) %}
+Environment=POSTGRES_DB={{ db_name }}
+Environment=POSTGRES_USER={{ db_user }}
+Environment=POSTGRES_HOST_AUTH_METHOD=trust
+{% if enable_vector %}
+
+# Enable pgvector extension and set connection pool
+Exec=-c shared_preload_libraries=vector -c max_connections=200
+{% endif %}
+{% endmacro %}
+
+{# Redis environment variables #}
+{% macro redisEnv() %}
+Environment=REDIS_ARGS=--save 60 1 --loglevel warning
+{% endmacro %}
+
+{# ═════════════════════════════════════════════════════════════════════════ #}
 {# ENVIRONMENT MACROS                                                         #}
 {# ═════════════════════════════════════════════════════════════════════════ #}
 
