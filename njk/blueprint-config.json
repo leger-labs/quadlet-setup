@@ -207,6 +207,48 @@
         "enabled": true,
         "websocket": true,
         "description": "System Management Dashboard"
+      },
+      "mcp_context_forge_postgres": {
+        "hostname": "mcp-context-forge-postgres",
+        "container_name": "mcp-context-forge-postgres",
+        "port": 5432,
+        "published_port": null,
+        "image": "docker.io/postgres:17",
+        "db_name": "mcp",
+        "db_user": "mcp",
+        "volume": "mcp-context-forge-postgres.volume",
+        "enabled": true
+      },
+      "mcp_context_forge": {
+        "hostname": "mcp-context-forge",
+        "container_name": "mcp-context-forge",
+        "port": 4444,
+        "published_port": 4444,
+        "bind": "127.0.0.1",
+        "image": "ghcr.io/ibm/mcp-context-forge:0.8.0",
+        "external_subdomain": "mcp",
+        "enabled": true,
+        "websocket": true,
+        "description": "MCP Context Forge - Enterprise Model Context Protocol Gateway",
+        "requires": ["mcp_context_forge_postgres"],
+        "data_dir": "%h/.local/share/mcp-context-forge",
+        "config_dir": "%h/.config/mcp-context-forge",
+        "database": "postgresql",
+        "catalog_enabled": true,
+        "ui_enabled": true,
+        "admin_api_enabled": true,
+        "auth_required": true,
+        "admin_email": "admin@example.com",
+        "admin_name": "Platform Administrator",
+        "jwt_algorithm": "HS256",
+        "redis_enabled": false,
+        "federation_enabled": true,
+        "a2a_enabled": true,
+        "llmchat_enabled": false,
+        "observability_enabled": false,
+        "log_level": "INFO",
+        "environment": "production",
+        "secure_cookies": true
       }
     }
   },
@@ -229,6 +271,11 @@
     "audio_providers": {
       "elevenlabs": "${ELEVENLABS_API_KEY}",
       "deepgram": "${DEEPGRAM_API_KEY}"
+    },
+    "mcp_context_forge": {
+      "jwt_secret_key": "${MCP_JWT_SECRET_KEY}",
+      "admin_password": "${MCP_ADMIN_PASSWORD}",
+      "auth_encryption_secret": "${MCP_AUTH_ENCRYPTION_SECRET}"
     }
   },
   "litellm": {
