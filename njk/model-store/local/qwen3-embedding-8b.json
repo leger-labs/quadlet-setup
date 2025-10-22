@@ -1,0 +1,29 @@
+{
+  "id": "qwen3-embedding-8b",
+  "name": "Qwen3 Embedding 8B",
+  "model_uri": "huggingface://Qwen/Qwen3-Embedding-8B-GGUF/qwen3-embedding-8b-q8_0.gguf",
+  "quantization": "Q8_0",
+  "ram_required_gb": 9,
+  "context_window": 8192,
+  "group": "embeddings",
+  "description": "High-quality embedding model - 8B parameters (DEFAULT)",
+  "family": "qwen",
+  "capabilities": ["embeddings"],
+  "ctx_size": 8192,
+  "ttl": 0,
+  "hf_repo": "Qwen/Qwen3-Embedding-8B-GGUF",
+  "hf_file": "qwen3-embedding-8b-q8_0.gguf",
+  "vulkan_driver": "RADV",
+  "flash_attn": false,
+  "embedding_dimension": 4096,
+  "shortname": "qwen3-emb-large",
+  "aliases": ["qwen-embed", "default-embedding"],
+  "use_cases": [
+    "RAG document embedding",
+    "Semantic search",
+    "Document similarity",
+    "Vector database indexing"
+  ],
+  "notes": "Default embedding model - never unloads, always ready",
+  "enabled": true
+}
