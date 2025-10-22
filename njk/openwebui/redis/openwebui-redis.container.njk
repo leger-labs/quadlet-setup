@@ -1,11 +1,19 @@
-{% import "macros.njk" as m -%}
+{% import "../../macros.njk" as m -%}
+{% set catalog = (readFile('../../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.openwebui_redis -%}
+# ═════════════════════════════════════════════════════════════════════════════
+# {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
+# ═════════════════════════════════════════════════════════════════════════════
+
 [Unit]
 Description=Redis cache for Open WebUI
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
 
 [Container]
-Image={{ infrastructure.services.openwebui_redis.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
 ContainerName={{ infrastructure.services.openwebui_redis.container_name }}
 

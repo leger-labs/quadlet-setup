@@ -1,19 +1,21 @@
-{% import "macros.njk" as m -%}
+{% import "../../macros.njk" as m -%}
+{% set catalog = (readFile('../../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.litellm_redis -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 📄 APACHE TIKA - Content Extraction Service
-# Generated from blueprint-config.json
-# Conditionally enabled when: openwebui.providers.content_extraction == "tika"
+# {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
-Description={{ infrastructure.services.tika.description }}
+Description=Redis cache for LiteLLM
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
 
 [Container]
-Image={{ infrastructure.services.tika.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.tika.container_name }}
+ContainerName={{ infrastructure.services.litellm_redis.container_name }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🌐 NETWORK - Internal only, no published ports
@@ -21,20 +23,24 @@ ContainerName={{ infrastructure.services.tika.container_name }}
 Network={{ infrastructure.network.name }}.network
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔐 ENVIRONMENT - Java heap settings for document processing
+# 🔐 ENVIRONMENT - No password needed (internal only)
 # ═════════════════════════════════════════════════════════════════════════════
-Environment=TIKA_CHILD_JAVA_OPTS=-JXmx{{ infrastructure.services.tika.heap_size | default("2g") }}
-Environment=TIKA_CHILD_MAX_HEAP={{ infrastructure.services.tika.heap_size | default("2g") }}
+{{ m.redisEnv() }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 💾 VOLUME
+# ═════════════════════════════════════════════════════════════════════════════
+{{ m.volumeMount(infrastructure.services.litellm_redis.volume, "/data") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.healthCheckWget(infrastructure.services.tika.port, "/tika") }}
+{{ m.redisHealthCheck() }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=600) }}
+{{ m.serviceSection(timeout=300, restart="on-failure") }}
 
 [Install]
 # No WantedBy - dependencies via After/Requires

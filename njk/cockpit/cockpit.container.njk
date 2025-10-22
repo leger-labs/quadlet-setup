@@ -1,82 +1,98 @@
-{% import "macros.njk" as m -%}
+{% import "../macros.njk" as m -%}
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.cockpit -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔊 EDGE-TTS - Text-to-Speech Service
-# Generated from blueprint-config.json
+# 🖥️  {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
+#
+# Note: Hostname {{ infrastructure.services.cockpit.hostname }} means this
+#       container represents the actual host system in the dashboard
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
-Description={{ infrastructure.services.edgetts.description }}
+Description={{ infrastructure.services.cockpit.description }}
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
+# Ensure podman socket is available for container monitoring
+After=podman.socket
+Wants=podman.socket
 
 [Container]
-Image={{ infrastructure.services.edgetts.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.edgetts.container_name }}
+ContainerName={{ infrastructure.services.cockpit.container_name }}
+Hostname={{ infrastructure.services.cockpit.hostname }}
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🌐 NETWORK
+# 🌐 NETWORK - Both llm network AND published port
 # ═════════════════════════════════════════════════════════════════════════════
 Network={{ infrastructure.network.name }}.network
 
-# ═════════════════════════════════════════════════════════════════════════════
-# 📍 PUBLISHED PORT (for OpenWebUI to access)
-# ═════════════════════════════════════════════════════════════════════════════
-{{ m.publishPort(infrastructure.services.edgetts) }}
+# Published port for Caddy access
+{{ m.publishPort(infrastructure.services.cockpit) }}
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 💾 VOLUME (for caching voice models)
-# ═════════════════════════════════════════════════════════════════════════════
-{{ m.volumeMount(infrastructure.services.edgetts.volume, "/data") }}
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 🌍 ENVIRONMENT - Auto-generated from configuration
+# 💾 VOLUMES - Full system access
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Default response format
-Environment=DEFAULT_RESPONSE_FORMAT={{ edgetts.response_format }}
+# Mount host root for full system visibility
+Volume=/:/host:ro
 
-# Speech speed (0.5 = half speed, 2.0 = double speed)
-Environment=DEFAULT_SPEED={{ edgetts.speed }}
+# Podman socket for container management
+Volume=/run/user/%U/podman/podman.sock:/run/podman/podman.sock:Z
 
-# Default voice (Microsoft Edge neural voice)
-Environment=DEFAULT_VOICE={{ edgetts.voice }}
+# Systemd socket for service management (read-only)
+Volume=/run/systemd:/run/systemd:ro
 
-# Server configuration
-Environment=PORT={{ infrastructure.services.edgetts.port }}
-Environment=HOST=0.0.0.0
+# User systemd for user service monitoring
+Volume=/run/user/%U/systemd:/run/user/systemd:ro
 
-# Logging
-Environment=LOG_LEVEL={{ edgetts.log_level }}
+# Cockpit configuration
+Volume=%h/.config/cockpit/cockpit.conf:/etc/cockpit/cockpit.conf:ro,Z
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🔐 SECURITY & PRIVILEGES
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Privileged mode for full system access
+PodmanArgs=--privileged
+
+# Use host PID namespace to see all processes
+PodmanArgs=--pid=host
+
+# Security label to allow system access
+PodmanArgs=--security-opt=label=disable
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🌍 ENVIRONMENT
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Cockpit runs as container
+Environment=COCKPIT_IN_CONTAINER=true
+
+# Disable authentication (Tailscale provides auth)
+Environment=COCKPIT_ALLOW_UNENCRYPTED=true
+
+# Container name for self-identification
+Environment=NAME={{ infrastructure.services.cockpit.container_name }}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# 🚀 EXECUTION
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Use the container's label-run script (standard Cockpit approach)
+Exec=/container/label-run
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-
-# Primary health check - service responsiveness
-{{ m.healthCheckWget(infrastructure.services.edgetts.port, "/health") }}
+{{ m.healthCheck(infrastructure.services.cockpit.port, "/") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=300) }}
-
-# Startup verification
-ExecStartPost=/bin/sh -c '\
-  echo "Edge-TTS: Waiting for service to be ready..."; \
-  for i in $(seq 1 30); do \
-    if wget --no-verbose --tries=1 --spider --timeout=2 http://localhost:{{ infrastructure.services.edgetts.port }}/health 2>/dev/null; then \
-      echo "Edge-TTS: ✓ Service health check passed"; \
-      if wget --no-verbose --tries=1 --spider --timeout=2 http://localhost:{{ infrastructure.services.edgetts.port }}/v1/voices 2>/dev/null; then \
-        echo "Edge-TTS: ✓ Voice API available"; \
-        echo "Edge-TTS: Service ready at http://localhost:{{ infrastructure.services.edgetts.port }}"; \
-        exit 0; \
-      fi; \
-    fi; \
-    sleep 1; \
-  done; \
-  echo "Edge-TTS: ⚠ Service started but verification incomplete (will retry on first use)"; \
-  exit 0'
+{{ m.serviceSection(timeout=300, restart="always") }}
 
 [Install]
-# No WantedBy - dependencies via After/Requires
+WantedBy=default.target

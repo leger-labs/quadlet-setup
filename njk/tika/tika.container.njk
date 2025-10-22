@@ -1,13 +1,22 @@
-{% import "macros.njk" as m -%}
+{% import "../macros.njk" as m -%}
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.tika -%}
+# ═════════════════════════════════════════════════════════════════════════════
+# 📄 {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
+# Conditionally enabled when: openwebui.providers.content_extraction == "tika"
+# ═════════════════════════════════════════════════════════════════════════════
+
 [Unit]
-Description=PostgreSQL database for MCP Context Forge
+Description={{ infrastructure.services.tika.description }}
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
 
 [Container]
-Image={{ infrastructure.services.mcp_context_forge_postgres.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.mcp_context_forge_postgres.container_name }}
+ContainerName={{ infrastructure.services.tika.container_name }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🌐 NETWORK - Internal only, no published ports
@@ -15,24 +24,20 @@ ContainerName={{ infrastructure.services.mcp_context_forge_postgres.container_na
 Network={{ infrastructure.network.name }}.network
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔐 ENVIRONMENT - No password needed (internal only, trust auth)
+# 🔐 ENVIRONMENT - Java heap settings for document processing
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.postgresEnv(infrastructure.services.mcp_context_forge_postgres.db_name, infrastructure.services.mcp_context_forge_postgres.db_user, enable_vector=false) }}
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 💾 VOLUME
-# ═════════════════════════════════════════════════════════════════════════════
-{{ m.volumeMount(infrastructure.services.mcp_context_forge_postgres.volume, "/var/lib/postgresql/data") }}
+Environment=TIKA_CHILD_JAVA_OPTS=-JXmx{{ infrastructure.services.tika.heap_size | default("2g") }}
+Environment=TIKA_CHILD_MAX_HEAP={{ infrastructure.services.tika.heap_size | default("2g") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.postgresHealthCheck(infrastructure.services.mcp_context_forge_postgres.db_user) }}
+{{ m.healthCheckWget(infrastructure.services.tika.port, "/tika") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=900) }}
+{{ m.serviceSection(timeout=600) }}
 
 [Install]
 # No WantedBy - dependencies via After/Requires

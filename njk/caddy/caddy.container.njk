@@ -1,6 +1,9 @@
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.caddy -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 🌉 CADDY - Reverse Proxy for LLM Services
-# Generated from blueprint-config.json
+# 🌉 {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
@@ -28,7 +31,7 @@ Wants={{ service.container_name }}.service
 {% endfor %}
 
 [Container]
-Image=docker.io/caddy:2-alpine
+Image={{ service_def.image }}
 AutoUpdate=registry
 ContainerName=caddy
 

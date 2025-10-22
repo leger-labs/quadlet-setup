@@ -1,18 +1,21 @@
-{% import "macros.njk" as m -%}
+{% import "../macros.njk" as m -%}
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.whisper -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔄 LLAMA-SWAP - Local LLM Router
-# Generated from blueprint-config.json
+# 🎤 {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
-Description={{ infrastructure.services.llama_swap.description }}
+Description={{ infrastructure.services.whisper.description }}
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
 
 [Container]
-Image={{ infrastructure.services.llama_swap.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.llama_swap.container_name }}
+ContainerName={{ infrastructure.services.whisper.container_name }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🌐 NETWORK
@@ -20,52 +23,74 @@ ContainerName={{ infrastructure.services.llama_swap.container_name }}
 Network={{ infrastructure.network.name }}.network
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 📍 PUBLISHED PORT (for LiteLLM and Caddy to access)
+# 📍 PUBLISHED PORT (for OpenWebUI to access)
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.publishPort(infrastructure.services.llama_swap) }}
+{{ m.publishPort(infrastructure.services.whisper) }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 💾 VOLUMES
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Podman socket - allows llama-swap to spawn ramalama containers
-Volume=/run/user/%U/podman/podman.sock:/run/podman/podman.sock:Z
-
-# RamaLama model cache - read-only access to downloaded models
-{{ m.hostMount("${HOME}/.local/share/ramalama", "/root/.local/share/ramalama", readonly=true) }}
-
-# llama-swap configuration file
-{{ m.hostMount("%h/.config/containers/systemd/llama-swap/config.yaml", "/app/config.yaml", readonly=true) }}
-
-# Persistent data volume for llama-swap state
-{{ m.volumeMount(infrastructure.services.llama_swap.volume, "/app/data") }}
+# Whisper model cache - shared with host for CLI usage
+Volume={{ whisper.cache_dir }}:/root/.cache/huggingface:Z
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔐 SECURITY
+# 🎮 GPU ACCESS (AMD Vulkan)
 # ═════════════════════════════════════════════════════════════════════════════
-
-# Allow container to control podman (spawn ramalama containers)
-PodmanArgs=--security-opt=label=disable
+{{ m.amdGPU() }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🌍 ENVIRONMENT
 # ═════════════════════════════════════════════════════════════════════════════
 
-# Podman socket location (for spawning containers)
-Environment=PODMAN_SOCK=unix:///run/podman/podman.sock
+# Whisper model configuration
+Environment=WHISPER_MODEL={{ whisper.model }}
+{% if whisper.language -%}
+Environment=WHISPER_LANGUAGE={{ whisper.language }}
+{% endif -%}
+Environment=WHISPER_BEAM_SIZE={{ whisper.beam_size }}
+Environment=WHISPER_COMPUTE_TYPE={{ whisper.compute_type }}
 
-# Home directory for ramalama
-Environment=HOME=/root
+# Device configuration (auto detects Vulkan)
+Environment=WHISPER_DEVICE={{ whisper.device }}
+
+# Cache location
+Environment=HF_HOME=/root/.cache/huggingface
+Environment=TRANSFORMERS_CACHE=/root/.cache/huggingface
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.healthCheck(infrastructure.services.llama_swap.port, "/health") | replace("30s", "10s") }}
+
+# Primary health check - service responsiveness
+{{ m.healthCheckWget(infrastructure.services.whisper.port, "/health") | replace("30s", "60s") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=300) }}
+{{ m.serviceSection(timeout=900) }}
+
+# Startup verification with model checking
+ExecStartPost=/bin/sh -c '\
+  echo "Whisper: Waiting for service to be ready..."; \
+  for i in $(seq 1 60); do \
+    if wget --no-verbose --tries=1 --spider --timeout=2 http://localhost:{{ infrastructure.services.whisper.port }}/health 2>/dev/null; then \
+      echo "Whisper: ✓ Service health check passed"; \
+      if wget --no-verbose --tries=1 -O- --timeout=5 http://localhost:{{ infrastructure.services.whisper.port }}/v1/models 2>/dev/null | grep -q "whisper"; then \
+        echo "Whisper: ✓ Model API available (model: {{ whisper.model }})"; \
+        echo "Whisper: Service ready at http://localhost:{{ infrastructure.services.whisper.port }}"; \
+        exit 0; \
+      else \
+        echo "Whisper: ⚠ Model not yet loaded (will load on first request)"; \
+      fi; \
+    fi; \
+    sleep 1; \
+  done; \
+  echo "Whisper: ⚠ Service started but verification incomplete (will retry on first use)"; \
+  exit 0'
+
+# Log startup status
+ExecStartPre=/usr/bin/echo "Whisper: Starting STT service with model={{ whisper.model }} language={{ whisper.language }}"
 
 [Install]
 # No WantedBy - dependencies via After/Requires

@@ -1,7 +1,10 @@
-{% import "macros.njk" as m -%}
+{% import "../macros.njk" as m -%}
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.jupyter -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 🐍 JUPYTER LAB - Blueprint Code Interpreter
-# Generated from blueprint-config.json
+# 🐍 {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
@@ -16,7 +19,7 @@ Wants={{ dep }}.service
 {% endfor %}
 
 [Container]
-Image=localhost/blueprint-jupyter:latest
+Image={{ service_def.image }}
 AutoUpdate=registry
 ContainerName={{ infrastructure.services.jupyter.container_name }}
 
