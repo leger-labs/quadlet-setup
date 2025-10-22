@@ -1,95 +1,46 @@
-{% import "macros.njk" as m -%}
+{% import "../../macros.njk" as m -%}
+{% set catalog = (readFile('../../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.mcp_context_forge_postgres -%}
 # ═════════════════════════════════════════════════════════════════════════════
-# 🖥️  COCKPIT - System Management Dashboard
-# Generated from blueprint-config.json
-#
-# Note: Hostname {{ infrastructure.services.cockpit.hostname }} means this
-#       container represents the actual host system in the dashboard
+# {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
 # ═════════════════════════════════════════════════════════════════════════════
 
 [Unit]
-Description={{ infrastructure.services.cockpit.description }}
+Description=PostgreSQL database for MCP Context Forge
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
-# Ensure podman socket is available for container monitoring
-After=podman.socket
-Wants=podman.socket
 
 [Container]
-Image={{ infrastructure.services.cockpit.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.cockpit.container_name }}
-Hostname={{ infrastructure.services.cockpit.hostname }}
+ContainerName={{ infrastructure.services.mcp_context_forge_postgres.container_name }}
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🌐 NETWORK - Both llm network AND published port
+# 🌐 NETWORK - Internal only, no published ports
 # ═════════════════════════════════════════════════════════════════════════════
 Network={{ infrastructure.network.name }}.network
 
-# Published port for Caddy access
-{{ m.publishPort(infrastructure.services.cockpit) }}
+# ═════════════════════════════════════════════════════════════════════════════
+# 🔐 ENVIRONMENT - No password needed (internal only, trust auth)
+# ═════════════════════════════════════════════════════════════════════════════
+{{ m.postgresEnv(infrastructure.services.mcp_context_forge_postgres.db_name, infrastructure.services.mcp_context_forge_postgres.db_user, enable_vector=false) }}
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 💾 VOLUMES - Full system access
+# 💾 VOLUME
 # ═════════════════════════════════════════════════════════════════════════════
-
-# Mount host root for full system visibility
-Volume=/:/host:ro
-
-# Podman socket for container management
-Volume=/run/user/%U/podman/podman.sock:/run/podman/podman.sock:Z
-
-# Systemd socket for service management (read-only)
-Volume=/run/systemd:/run/systemd:ro
-
-# User systemd for user service monitoring
-Volume=/run/user/%U/systemd:/run/user/systemd:ro
-
-# Cockpit configuration
-Volume=%h/.config/cockpit/cockpit.conf:/etc/cockpit/cockpit.conf:ro,Z
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 🔐 SECURITY & PRIVILEGES
-# ═════════════════════════════════════════════════════════════════════════════
-
-# Privileged mode for full system access
-PodmanArgs=--privileged
-
-# Use host PID namespace to see all processes
-PodmanArgs=--pid=host
-
-# Security label to allow system access
-PodmanArgs=--security-opt=label=disable
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 🌍 ENVIRONMENT
-# ═════════════════════════════════════════════════════════════════════════════
-
-# Cockpit runs as container
-Environment=COCKPIT_IN_CONTAINER=true
-
-# Disable authentication (Tailscale provides auth)
-Environment=COCKPIT_ALLOW_UNENCRYPTED=true
-
-# Container name for self-identification
-Environment=NAME={{ infrastructure.services.cockpit.container_name }}
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 🚀 EXECUTION
-# ═════════════════════════════════════════════════════════════════════════════
-
-# Use the container's label-run script (standard Cockpit approach)
-Exec=/container/label-run
+{{ m.volumeMount(infrastructure.services.mcp_context_forge_postgres.volume, "/var/lib/postgresql/data") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.healthCheck(infrastructure.services.cockpit.port, "/") }}
+{{ m.postgresHealthCheck(infrastructure.services.mcp_context_forge_postgres.db_user) }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=300, restart="always") }}
+{{ m.serviceSection(timeout=900) }}
 
 [Install]
-WantedBy=default.target
+# No WantedBy - dependencies via After/Requires

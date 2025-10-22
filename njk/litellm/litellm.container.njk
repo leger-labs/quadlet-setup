@@ -1,14 +1,17 @@
-{% extends "base-container.njk" %}
+{% extends "../base-container.njk" %}
+{% set catalog = (readFile('../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.litellm -%}
 
 {# ═════════════════════════════════════════════════════════════════════════ #}
-{# LITELLM CONTAINER - Extends base-container.njk                             #}
-{# Only defines what's unique to LiteLLM service                              #}
+{# {{ service_def.name }} v{{ service_def.version }}                          #}
+{# Release: {{ catalog.release.version }}                                     #}
+{# {{ service_def.notes }}                                                    #}
 {# ═════════════════════════════════════════════════════════════════════════ #}
 
 {# Pass service config to base template #}
 {% set service = infrastructure.services.litellm %}
 {% set description = service.description %}
-{% set image = service.image %}
+{% set image = service_def.image %}
 {% set container_name = service.container_name %}
 {% set port = service.port %}
 {% set published_port = service.published_port %}

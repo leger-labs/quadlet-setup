@@ -1,13 +1,21 @@
-{% import "macros.njk" as m -%}
+{% import "../../macros.njk" as m -%}
+{% set catalog = (readFile('../../release-catalog.json') | fromJson) -%}
+{% set service_def = catalog.services.searxng_redis -%}
+# ═════════════════════════════════════════════════════════════════════════════
+# {{ service_def.name }} v{{ service_def.version }}
+# Release: {{ catalog.release.version }}
+# {{ service_def.notes }}
+# ═════════════════════════════════════════════════════════════════════════════
+
 [Unit]
-Description=PostgreSQL database for LiteLLM
+Description=Redis cache for SearXNG
 After=network-online.target {{ infrastructure.network.name }}.network.service
 Requires={{ infrastructure.network.name }}.network.service
 
 [Container]
-Image={{ infrastructure.services.litellm_postgres.image }}
+Image={{ service_def.image }}
 AutoUpdate=registry
-ContainerName={{ infrastructure.services.litellm_postgres.container_name }}
+ContainerName={{ infrastructure.services.searxng_redis.container_name }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🌐 NETWORK - Internal only, no published ports
@@ -15,24 +23,24 @@ ContainerName={{ infrastructure.services.litellm_postgres.container_name }}
 Network={{ infrastructure.network.name }}.network
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 🔐 ENVIRONMENT - No password needed (internal only, trust auth)
+# 🔐 ENVIRONMENT - No password needed (internal only)
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.postgresEnv(infrastructure.services.litellm_postgres.db_name, infrastructure.services.litellm_postgres.db_user, enable_vector=true) }}
+{{ m.redisEnv() }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 💾 VOLUME
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.volumeMount(infrastructure.services.litellm_postgres.volume, "/var/lib/postgresql/data") }}
+{{ m.volumeMount(infrastructure.services.searxng_redis.volume, "/data") }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🔧 HEALTH CHECK
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.postgresHealthCheck(infrastructure.services.litellm_postgres.db_user) }}
+{{ m.redisHealthCheck() }}
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 🚀 SERVICE
 # ═════════════════════════════════════════════════════════════════════════════
-{{ m.serviceSection(timeout=900) }}
+{{ m.serviceSection(timeout=300, restart="on-failure") }}
 
 [Install]
 # No WantedBy - dependencies via After/Requires
