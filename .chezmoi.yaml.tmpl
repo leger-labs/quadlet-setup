@@ -22,6 +22,7 @@ data:
     jupyter: 8888
     qdrant: 6333       # Vector database for RAG
     qdrant_grpc: 6334  # gRPC port (internal only)
+    comfyui: 8188      # Stable Diffusion workflow engine
 
   # Published ports (host:container mapping for Caddy reverse proxy)
   # Only services that need external access via Caddy
@@ -34,6 +35,7 @@ data:
     letta: 8283          # Host 8283 → Container 8283
     jupyter: 8889        # Host 8889 → Container 8888
     qdrant: 6333         # Host 6333 → Container 6333 (optional dashboard)
+    comfyui: 8188        # Host 8188 → Container 8188
     # Note: postgres, redis, tika - NO published ports (internal only)
 
   # External URLs (via Tailscale + Caddy)
@@ -42,6 +44,7 @@ data:
     litellm: "https://litellm.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
     searxng: "https://search.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
     jupyter: "https://jupyter.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
+    comfyui: "https://comfy.{{ .tailscale.hostname }}.{{ .tailscale.tailnet }}"
 
   # Tailscale configuration
   tailscale:
@@ -66,6 +69,8 @@ data:
     qdrant: "{{ .secrets.api_keys.qdrant }}"
     mistral_ocr: "{{ .secrets.api_keys.mistral_ocr }}"
     tavily: "{{ .secrets.api_keys.tavily }}"
+    huggingface: "{{ .secrets.api_keys.huggingface }}"
+    civitai: "{{ .secrets.api_keys.civitai }}"
 
   # Service-specific configuration
   service_config:
@@ -106,3 +111,5 @@ secrets:
     qdrant: "changeme-qdrant-api-key"
     mistral_ocr: "changeme-mistral-ocr-key"
     tavily: "tvly-changeme"
+    huggingface: "hf_changeme"
+    civitai: "changeme-civitai-token"
