@@ -1,0 +1,26 @@
+{
+  "id": "qwen3-0.6b",
+  "name": "Qwen3 0.6B",
+  "model_uri": "huggingface://Qwen/Qwen3-0.6B-GGUF/qwen3-0.6b-q4_k_m.gguf",
+  "quantization": "Q4_K_M",
+  "ram_required_gb": 1,
+  "context_window": 32768,
+  "group": "task",
+  "description": "Ultra-fast task model - title generation",
+  "family": "qwen",
+  "capabilities": ["chat"],
+  "ctx_size": 4096,
+  "ttl": 0,
+  "hf_repo": "Qwen/Qwen3-0.6B-GGUF",
+  "hf_file": "qwen3-0.6b-q4_k_m.gguf",
+  "vulkan_driver": "RADV",
+  "flash_attn": true,
+  "shortname": "qwen3-tiny",
+  "use_cases": [
+    "Title generation",
+    "Quick summaries",
+    "Simple classification"
+  ],
+  "notes": "Never unloads - always ready for instant response",
+  "enabled": true
+}

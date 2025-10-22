@@ -1,0 +1,27 @@
+{
+  "id": "gpt-oss-20b",
+  "name": "GPT-OSS 20B",
+  "model_uri": "huggingface://openai/gpt-oss-20b-GGUF/gpt-oss-20b-q4_k_m.gguf",
+  "quantization": "Q4_K_M",
+  "ram_required_gb": 16,
+  "context_window": 8192,
+  "group": "heavy",
+  "description": "OpenAI's 20B parameter model - Fast general tasks",
+  "family": "gpt-oss",
+  "capabilities": ["chat", "code", "reasoning"],
+  "ctx_size": 8192,
+  "ttl": 600,
+  "hf_repo": "openai/gpt-oss-20b-GGUF",
+  "hf_file": "gpt-oss-20b-q4_k_m.gguf",
+  "vulkan_driver": "RADV",
+  "flash_attn": true,
+  "aliases": ["gpt-oss"],
+  "use_cases": [
+    "General conversation",
+    "Code generation",
+    "Problem solving",
+    "Content creation"
+  ],
+  "notes": "Auto-swaps after 10 minutes of inactivity",
+  "enabled": true
+}
