@@ -1,0 +1,94 @@
+{
+  "$schema": "https://leger.run/schemas/blueprint.schema.json",
+  "version": "1.0",
+
+  "metadata": {
+    "name": "My Leger AI Stack",
+    "description": "Personal AI infrastructure with MCP tool servers",
+    "author": "mecattaf",
+    "created": "2025-10-22"
+  },
+
+  "models": {
+    "cloud": [
+      "gpt-5-mini",
+      "claude-sonnet-4-5",
+      "gemini-2.5-flash"
+    ],
+    "local": [
+      "qwen3-0.6b",
+      "qwen3-4b",
+      "gpt-oss-20b",
+      "qwen3-embedding-8b"
+    ]
+  },
+
+  "mcp_servers": {
+    "enabled": [
+      "time",
+      "filesystem",
+      "postgres",
+      "git",
+      "github",
+      "web-search"
+    ],
+    "disabled": [
+      "email",
+      "calendar",
+      "slack",
+      "todoist"
+    ]
+  },
+
+  "mcp_gateway": {
+    "enabled": true,
+    "mode": "context-forge",
+    "auth_required": true,
+    "catalog_enabled": true,
+    "a2a_enabled": true,
+    "federation_enabled": true
+  },
+
+  "openwebui": {
+    "direct_connections": true,
+    "mcp_integration": {
+      "enabled": true,
+      "gateway_url": "http://mcp-context-forge:4444",
+      "virtual_servers": [
+        {
+          "name": "dev-tools",
+          "tools": ["filesystem_read", "filesystem_write", "git_status", "git_commit"]
+        },
+        {
+          "name": "research-tools",
+          "tools": ["web_search", "github_search", "postgres_query"]
+        }
+      ]
+    }
+  },
+
+  "features": {
+    "rag": true,
+    "web_search": true,
+    "code_execution": true,
+    "speech_to_text": true,
+    "text_to_speech": true
+  },
+
+  "providers": {
+    "vector_db": "pgvector",
+    "content_extraction": "tika",
+    "web_search_engine": "searxng",
+    "stt_engine": "openai",
+    "tts_engine": "openai"
+  },
+
+  "secrets": {
+    "api_keys": {
+      "openai": "{{ env:OPENAI_API_KEY }}",
+      "anthropic": "{{ env:ANTHROPIC_API_KEY }}",
+      "gemini": "{{ env:GEMINI_API_KEY }}",
+      "github": "{{ env:GITHUB_PAT }}"
+    }
+  }
+}
