@@ -1,0 +1,49 @@
+{
+  "$schema": "https://leger.run/schemas/blueprint.schema.json",
+  "version": "1.0",
+  "metadata": {
+    "name": "My Leger AI Stack",
+    "description": "Personal AI infrastructure configuration",
+    "author": "mecattaf",
+    "created": "2025-10-22"
+  },
+
+  "models": {
+    "cloud": [
+      "gpt-5",
+      "gpt-5-mini",
+      "claude-sonnet-4-5",
+      "gemini-2.5-flash"
+    ],
+    "local": [
+      "qwen3-0.6b",
+      "qwen3-4b",
+      "gpt-oss-20b",
+      "qwen3-embedding-8b"
+    ]
+  },
+
+  "features": {
+    "rag": true,
+    "web_search": true,
+    "code_execution": true,
+    "speech_to_text": true,
+    "text_to_speech": true
+  },
+
+  "providers": {
+    "vector_db": "pgvector",
+    "content_extraction": "tika",
+    "web_search_engine": "searxng",
+    "stt_engine": "openai",
+    "tts_engine": "openai"
+  },
+
+  "secrets": {
+    "api_keys": {
+      "openai": "{{ env:OPENAI_API_KEY }}",
+      "anthropic": "{{ env:ANTHROPIC_API_KEY }}",
+      "gemini": "{{ env:GEMINI_API_KEY }}"
+    }
+  }
+}
