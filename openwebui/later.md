@@ -15,3 +15,14 @@ https://github.com/1818TusculumSt/smartmemorymcp
 https://github.com/sancelot/open-webui-multimodal-pipeline
 
 https://github.com/liucoj/Charts
+
+https://github.com/Baronco/GenFilesMCP
+
+https://github.com/Slyefox/hybrid-memory-openwebui
+https://openwebui.com/t/slyefox/hybrid_memory_xl
+
+https://github.com/ronilaukkarinen/open-webui-memory
+
+https://openwebui.com/f/niknub/claude_4_5_with_thinking
+
+https://github.com/1818TusculumSt/smartmemoryapi
